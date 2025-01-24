@@ -8,7 +8,8 @@
 #include <unistd.h>
 #include <dirent.h>
 
-#include "routes.h"
+#include "core/routes.h"
+#include "utils/logging.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -18,14 +19,6 @@
 #define BUF_LEN (1024 * (EVENT_SIZE + PATH_MAX))
 
 pthread_rwlock_t routes_rwlock;
-
-void log_debug(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    fflush(stderr);
-}
 
 void* monitor_routes(void* arg) {
     struct RouteContainer *route_container = (struct RouteContainer *)arg;

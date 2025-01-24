@@ -7,7 +7,6 @@ set(CMAKE_C_STANDARD_REQUIRED True)
 
 # Include directories
 include_directories(${CMAKE_SOURCE_DIR}/includes)
-include_directories(${CMAKE_SOURCE_DIR}/src/routes)
 
 # Find and include necessary libraries
 find_package(PkgConfig REQUIRED)
@@ -32,11 +31,12 @@ find_library(B64_LIBRARY NAMES b64 PATHS /usr/lib/x86_64-linux-gnu)
 message(STATUS "Using libb64: ${B64_LIBRARY}")
 
 # Collect all source files from the src/ directory
-file(GLOB_RECURSE SOURCES "${CMAKE_SOURCE_DIR}/src/*.c")
-file(GLOB_RECURSE HEADERS "${CMAKE_SOURCE_DIR}/includes/*.h")
+file(GLOB_RECURSE CORE_SOURCES "${CMAKE_SOURCE_DIR}/src/core/*.c")
+file(GLOB_RECURSE UTILS_SOURCES "${CMAKE_SOURCE_DIR}/src/utils/*.c")
+file(GLOB_RECURSE ROUTES_SOURCES "${CMAKE_SOURCE_DIR}/src/routes/*.c")
 
 # Define the executable target
-add_executable(katz ${SOURCES} ${HEADERS})
+add_executable(katz ${CORE_SOURCES} ${UTILS_SOURCES} ${ROUTES_SOURCES} src/main.c) # Add main.c here
 
 # Link libraries with the executable
 target_link_libraries(katz PRIVATE 
@@ -52,16 +52,12 @@ target_link_libraries(katz PRIVATE
 set_target_properties(katz PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Compile route .c files into shared libraries
-file(GLOB_RECURSE ROUTE_SOURCES "${CMAKE_SOURCE_DIR}/src/routes/*.c")
-
-foreach(route_source ${ROUTE_SOURCES})
+foreach(route_source ${ROUTES_SOURCES})
     get_filename_component(route_name ${route_source} NAME_WE)
 
     # Create the shared library for each route
     add_library(${route_name} SHARED
         ${route_source}
-        ${SOURCES} 
-        ${HEADERS}
     )
 
     # Include directories and link the required libraries
