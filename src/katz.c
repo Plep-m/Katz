@@ -27,10 +27,10 @@ int katz_init(const char *config_path) {
 
     struct Route *routes = NULL;
     int route_count = 0;
-    load_routes(&routes, &route_count, config); // Pass config here
+    load_routes(&routes, &route_count, config);
 
     // Initialize route_container
-    struct RouteContainer route_container = { routes, route_count, config }; // Add config here
+    struct RouteContainer route_container = { routes, route_count, config };
 
     // Log the state of route_container
     log_debug("Initialized route container with %d routes", route_container.route_count);

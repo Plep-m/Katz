@@ -73,31 +73,23 @@ void* monitor_routes(void* arg) {
             struct inotify_event *event = (struct inotify_event *)ptr;
             if (event->len) {
                 if (event->wd == source_watch_fd && strstr(event->name, ".c")) {
-                    // Detected change in a .c file in the source directory
                     log_info("Detected change in source file: %s", event->name);
-
-                    // Trigger a make command
                     log_info("Triggering make...");
                     int result = system("make");
                     if (result != 0) {
                         log_error("Failed to execute make command");
                     } else {
                         log_info("Make command executed successfully");
-
-                        // Extract the route name from the .c file name
                         char route_name[256];
                         extract_route_name(event->name, route_name);
 
-                        // Construct the corresponding .so file name
                         char so_file_name[256];
                         snprintf(so_file_name, sizeof(so_file_name), "libroute_%s.so", route_name);
 
-                        // Trigger reload_route for the corresponding .so file
                         log_info("Reloading route: %s", so_file_name);
                         reload_route(route_container, so_file_name, config);
                     }
                 } else if (event->wd == route_watch_fd && strstr(event->name, ".so")) {
-                    // Detected change in a .so file in the route directory
                     log_info("Detected change in route: %s", event->name);
                     reload_route(route_container, event->name, config);
                 }
@@ -120,7 +112,6 @@ void reload_route(struct RouteContainer *route_container, const char *file_name,
 
     pthread_rwlock_wrlock(&routes_rwlock);
 
-    // Log the state of route_container
     log_debug("Route container has %d routes", route_container->route_count);
     for (int i = 0; i < route_container->route_count; i++) {
         log_debug("Route %d: URL = %s, dl_handle = %p", i, route_container->routes[i].url, route_container->routes[i].dl_handle);

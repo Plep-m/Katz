@@ -26,5 +26,22 @@ Katz is a lightweight C API backend designed for building modular and extensible
 This will install the libkatz.so shared library to /usr/local/lib and the public headers to /usr/local/include/katz.
 now you can </br>
 ```c
-  include <katz/katz.h>
+  #include "katz/katz.h"
+  #include <unistd.h>
+
+  int main() {
+      if (!katz_init("../config/config.json")) {
+          return 1;
+      }
+
+      katz_start();
+
+      while (1) {
+          sleep(1);
+      }
+
+      katz_stop();
+      katz_cleanup();
+      return 0;
+  }
 ```
