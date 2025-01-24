@@ -53,6 +53,9 @@ struct Route {
     char *url;
     int (*get_handler)(struct MHD_Connection *);
     int (*post_handler)(struct MHD_Connection *, const char *);
+    int (*put_handler)(struct MHD_Connection *, const char *);
+    int (*delete_handler)(struct MHD_Connection *);
+    int (*patch_handler)(struct MHD_Connection *, const char *);
     void *dl_handle;
 };
 

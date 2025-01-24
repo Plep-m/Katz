@@ -132,24 +132,32 @@ int load_route(struct Route *route, const char *path) {
     char route_name[256];
     extract_route_name(path, route_name);
 
-    // Try to load GET handler (optional)
     char get_handler_name[256];
     snprintf(get_handler_name, sizeof(get_handler_name), "%s_get_handler", route_name);
     int (*get_handler)(struct MHD_Connection *) = (int (*)(struct MHD_Connection *))dlsym(handle, get_handler_name);
 
-    // Try to load POST handler (optional)
     char post_handler_name[256];
     snprintf(post_handler_name, sizeof(post_handler_name), "%s_post_handler", route_name);
     int (*post_handler)(struct MHD_Connection *, const char *) = (int (*)(struct MHD_Connection *, const char *))dlsym(handle, post_handler_name);
 
-    // If neither handler is found, the route is invalid
-    if (!get_handler && !post_handler) {
+    char put_handler_name[256];
+    snprintf(put_handler_name, sizeof(put_handler_name), "%s_put_handler", route_name);
+    int (*put_handler)(struct MHD_Connection *, const char *) = (int (*)(struct MHD_Connection *, const char *))dlsym(handle, put_handler_name);
+
+    char delete_handler_name[256];
+    snprintf(delete_handler_name, sizeof(delete_handler_name), "%s_delete_handler", route_name);
+    int (*delete_handler)(struct MHD_Connection *) = (int (*)(struct MHD_Connection *))dlsym(handle, delete_handler_name);
+
+    char patch_handler_name[256];
+    snprintf(patch_handler_name, sizeof(patch_handler_name), "%s_patch_handler", route_name);
+    int (*patch_handler)(struct MHD_Connection *, const char *) = (int (*)(struct MHD_Connection *, const char *))dlsym(handle, patch_handler_name);
+
+    if (!get_handler && !post_handler && !put_handler && !delete_handler && !patch_handler) {
         log_error("No valid handlers found for route: %s", route_name);
         dlclose(handle);
         return 0;
     }
 
-    // Allocate memory for the route URL
     route->url = malloc(strlen(route_name) + 2);
     if (!route->url) {
         log_error("Failed to allocate memory for route URL: %s", route_name);
@@ -158,10 +166,11 @@ int load_route(struct Route *route, const char *path) {
     }
     route->url[0] = '/';
     strcpy(route->url + 1, route_name);
-
-    // Assign handlers (can be NULL if not implemented)
     route->get_handler = get_handler;
     route->post_handler = post_handler;
+    route->put_handler = put_handler;
+    route->delete_handler = delete_handler;
+    route->patch_handler = patch_handler;
     route->dl_handle = handle;
 
     log_info("Registered route: %s", route->url);

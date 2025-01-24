@@ -76,7 +76,6 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
             }
         }
 
-        // If no POST handler is found, return 405 Method Not Allowed
         const char *response_str = "405 Method Not Allowed";
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(response_str), (void *)response_str, MHD_RESPMEM_PERSISTENT);
@@ -98,15 +97,39 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
                 return result;
             }
         }
+    }
 
-        // If no GET handler is found, return 405 Method Not Allowed
-        const char *response_str = "405 Method Not Allowed";
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), (void *)response_str, MHD_RESPMEM_PERSISTENT);
-        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_METHOD_NOT_ALLOWED, response);
-        MHD_destroy_response(response);
-        pthread_rwlock_unlock(&routes_rwlock);
-        return ret;
+    // Handle PUT requests
+    if (strcmp(method, "PUT") == 0) {
+        for (int i = 0; i < route_container->route_count; i++) {
+            if (strcmp(route_container->routes[i].url, url) == 0 && route_container->routes[i].put_handler) {
+                enum MHD_Result result = route_container->routes[i].put_handler(connection, upload_data);
+                pthread_rwlock_unlock(&routes_rwlock);
+                return result;
+            }
+        }
+    }
+
+    // Handle DELETE requests
+    if (strcmp(method, "DELETE") == 0) {
+        for (int i = 0; i < route_container->route_count; i++) {
+            if (strcmp(route_container->routes[i].url, url) == 0 && route_container->routes[i].delete_handler) {
+                enum MHD_Result result = route_container->routes[i].delete_handler(connection);
+                pthread_rwlock_unlock(&routes_rwlock);
+                return result;
+            }
+        }
+    }
+
+    // Handle PATCH requests
+    if (strcmp(method, "PATCH") == 0) {
+        for (int i = 0; i < route_container->route_count; i++) {
+            if (strcmp(route_container->routes[i].url, url) == 0 && route_container->routes[i].patch_handler) {
+                enum MHD_Result result = route_container->routes[i].patch_handler(connection, upload_data);
+                pthread_rwlock_unlock(&routes_rwlock);
+                return result;
+            }
+        }
     }
 
     // Handle unsupported methods
