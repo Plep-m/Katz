@@ -17,6 +17,11 @@ Katz is a lightweight C API backend designed for building modular and extensible
 ## Usage
 
 ```bash
-  docker compose build
-  docker compose up
+  clone this repo
+  mkdir build && cd build && cmake .. && make && sudo make install
+```
+This will install the libkatz.so shared library to /usr/local/lib and the public headers to /usr/local/include/katz.
+now you can </br>
+```c
+  include <katz/katz.h>
 ```

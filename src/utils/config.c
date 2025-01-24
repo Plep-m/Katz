@@ -23,6 +23,7 @@ Config *config_load(const char *filename) {
     if (server) {
         config->port = json_integer_value(json_object_get(server, "port"));
         config->route_directory = strdup(json_string_value(json_object_get(server, "route_directory")));
+        config->routes_sources = strdup(json_string_value(json_object_get(server, "routes_sources")));
         const char *log_level_str = json_string_value(json_object_get(server, "log_level"));
         if (strcmp(log_level_str, "debug") == 0) config->log_level = LOG_LEVEL_DEBUG;
         else if (strcmp(log_level_str, "info") == 0) config->log_level = LOG_LEVEL_INFO;
@@ -44,6 +45,7 @@ Config *config_load(const char *filename) {
 void config_free(Config *config) {
     if (config) {
         free(config->route_directory);
+        free(config->routes_sources);
         free(config);
     }
 }

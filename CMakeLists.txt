@@ -35,10 +35,10 @@ file(GLOB_RECURSE CORE_SOURCES "${CMAKE_SOURCE_DIR}/src/core/*.c")
 file(GLOB_RECURSE UTILS_SOURCES "${CMAKE_SOURCE_DIR}/src/utils/*.c")
 file(GLOB_RECURSE ROUTES_SOURCES "${CMAKE_SOURCE_DIR}/src/routes/*.c")
 
-# Define the executable target
-add_executable(katz ${CORE_SOURCES} ${UTILS_SOURCES} ${ROUTES_SOURCES} src/main.c) # Add main.c here
+# Define the library target
+add_library(katz SHARED ${CORE_SOURCES} ${UTILS_SOURCES} ${ROUTES_SOURCES} src/katz.c)
 
-# Link libraries with the executable
+# Link libraries with the library
 target_link_libraries(katz PRIVATE 
     ${MICROHTTPD_LIBRARIES} 
     ${UUID_LIBRARY}
@@ -48,33 +48,14 @@ target_link_libraries(katz PRIVATE
     dl
 )
 
-# Set the runtime output directory for the executable
-set_target_properties(katz PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+# Install the library to /usr/local/lib
+install(TARGETS katz
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
 
-# Compile route .c files into shared libraries
-foreach(route_source ${ROUTES_SOURCES})
-    get_filename_component(route_name ${route_source} NAME_WE)
-
-    # Create the shared library for each route
-    add_library(${route_name} SHARED
-        ${route_source}
-        ${CORE_SOURCES} ${UTILS_SOURCES} ${ROUTES_SOURCES}
-    )
-
-    # Include directories and link the required libraries
-    target_include_directories(${route_name} PRIVATE 
-        ${CMAKE_SOURCE_DIR}/includes 
-        ${JANSSON_INCLUDE_DIR} 
-        ${B64_INCLUDE_DIRS}
-    )
-    target_link_libraries(${route_name} PRIVATE 
-        pthread 
-        dl 
-        ${JANSSON_LIBRARY} 
-        ${B64_LIBRARY}
-    )
-
-    # Set the output directory for shared libraries
-    set_target_properties(${route_name} PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/routes)
-endforeach()
+# Install only the public headers to /usr/local/include/katz
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/includes/public/
+    DESTINATION include/katz
+    FILES_MATCHING PATTERN "*.h"
+)

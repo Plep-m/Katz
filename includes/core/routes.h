@@ -11,6 +11,8 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
+#include "utils/config.h"
+
 #if !defined(__USE_UNIX98) && !defined(__USE_XOPEN2K)
 typedef union {
     struct {
@@ -42,6 +44,7 @@ extern pthread_rwlock_t routes_rwlock;
 struct RouteContainer {
     struct Route *routes;
     int route_count;
+    Config *config;
 };
 
 struct UploadData {
@@ -61,8 +64,8 @@ struct Route {
 
 void extract_route_name(const char *file_name, char *route_name);
 int load_route(struct Route *route, const char *path);
-void load_routes(struct Route **routes, int *route_count);
+void load_routes(struct Route **routes, int *route_count, Config *config);
 void* monitor_routes(void* arg);
-void reload_route(struct RouteContainer *route_container, const char *file_name);
+void reload_route(struct RouteContainer *route_container, const char *file_name, Config *config);
 
 #endif // ROUTES_H
