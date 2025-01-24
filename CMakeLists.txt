@@ -53,8 +53,6 @@ set_target_properties(katz PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DI
 
 # Compile route .c files into shared libraries
 file(GLOB_RECURSE ROUTE_SOURCES "${CMAKE_SOURCE_DIR}/src/routes/*.c")
-file(GLOB_RECURSE HTTP_HELPER_SOURCES "${CMAKE_SOURCE_DIR}/src/http_helper.c")
-file(GLOB_RECURSE HTTP_HELPER_HEADERS "${CMAKE_SOURCE_DIR}/includes/http_helper.h")
 
 foreach(route_source ${ROUTE_SOURCES})
     get_filename_component(route_name ${route_source} NAME_WE)
@@ -62,8 +60,8 @@ foreach(route_source ${ROUTE_SOURCES})
     # Create the shared library for each route
     add_library(${route_name} SHARED
         ${route_source}
-        ${HTTP_HELPER_SOURCES} 
-        ${HTTP_HELPER_HEADERS}
+        ${SOURCES} 
+        ${HEADERS}
     )
 
     # Include directories and link the required libraries

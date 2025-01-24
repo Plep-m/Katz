@@ -1,4 +1,3 @@
-#include "http.h"
 #include <sys/inotify.h>
 #include <limits.h>
 #include <pthread.h>
@@ -8,6 +7,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+
+#include "routes.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -113,95 +114,7 @@ void reload_route(struct RouteContainer *route_container, const char *file_name)
     pthread_rwlock_unlock(&routes_rwlock);
 }
 
-enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection, 
-                               const char *url, const char *method, 
-                               const char *version, const char *upload_data,
-                               size_t *upload_data_size, void **con_cls) {
-    struct RouteContainer *route_container = (struct RouteContainer *)cls;
 
-    pthread_rwlock_rdlock(&routes_rwlock);
-
-    if (route_container == NULL || route_container->routes == NULL) {
-        log_debug("Routes array is NULL!\n");
-        pthread_rwlock_unlock(&routes_rwlock);
-        return MHD_NO;
-    }
-
-    if (*con_cls == NULL) {
-        struct UploadData *data = calloc(1, sizeof(struct UploadData));
-        if (!data) {
-            log_debug("Failed to allocate memory for UploadData\n");
-            pthread_rwlock_unlock(&routes_rwlock);
-            return MHD_NO;
-        }
-        *con_cls = data;
-        pthread_rwlock_unlock(&routes_rwlock);
-        return MHD_YES;
-    }
-
-    struct UploadData *upload = (struct UploadData *)*con_cls;
-
-    if (strcmp(method, "POST") == 0) {
-        if (*upload_data_size > 0) {
-            char *new_buffer = realloc(upload->buffer, upload->size + *upload_data_size + 1);
-            if (!new_buffer) {
-                log_debug("Failed to reallocate memory for upload data\n");
-                pthread_rwlock_unlock(&routes_rwlock);
-                return MHD_NO;
-            }
-
-            upload->buffer = new_buffer;
-            memcpy(upload->buffer + upload->size, upload_data, *upload_data_size);
-            upload->size += *upload_data_size;
-            upload->buffer[upload->size] = '\0';
-
-            *upload_data_size = 0;
-            pthread_rwlock_unlock(&routes_rwlock);
-            return MHD_YES;
-        }
-
-        if (upload->buffer) {
-            for (int i = 0; i < route_container->route_count; i++) {
-                if (strcmp(route_container->routes[i].url, url) == 0 && route_container->routes[i].post_handler) {
-                    enum MHD_Result result = route_container->routes[i].post_handler(connection, upload->buffer);
-                    free(upload->buffer);
-                    free(upload);
-                    *con_cls = NULL;
-                    pthread_rwlock_unlock(&routes_rwlock);
-                    return result;
-                }
-            }
-        }
-
-        const char *response_str = "404 Not Found";
-        struct MHD_Response *response = MHD_create_response_from_buffer(
-            strlen(response_str), (void *)response_str, MHD_RESPMEM_PERSISTENT);
-        enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
-        MHD_destroy_response(response);
-
-        free(upload->buffer);
-        free(upload);
-        *con_cls = NULL;
-        pthread_rwlock_unlock(&routes_rwlock);
-        return ret;
-    }
-
-    for (int i = 0; i < route_container->route_count; i++) {
-        if (strcmp(route_container->routes[i].url, url) == 0 && route_container->routes[i].get_handler) {
-            enum MHD_Result result = route_container->routes[i].get_handler(connection);
-            pthread_rwlock_unlock(&routes_rwlock);
-            return result;
-        }
-    }
-
-    const char *not_found_response = "404 Not Found";
-    struct MHD_Response *response = MHD_create_response_from_buffer(
-        strlen(not_found_response), (void *)not_found_response, MHD_RESPMEM_PERSISTENT);
-    enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
-    MHD_destroy_response(response);
-    pthread_rwlock_unlock(&routes_rwlock);
-    return ret;
-}
 
 void extract_route_name(const char *file_name, char *route_name) {
     const char *start = strstr(file_name, "libroute_");
@@ -226,24 +139,29 @@ int load_route(struct Route *route, const char *path) {
     char route_name[256];
     extract_route_name(path, route_name);
 
-    char handler_name[256];
-    snprintf(handler_name, sizeof(handler_name), "%s_get_handler", route_name);
-    int (*get_handler)(struct MHD_Connection *) = (int (*)(struct MHD_Connection *))dlsym(handle, handler_name);
-    if (!get_handler) {
-        log_debug("Failed to find %s in %s: %s\n", handler_name, path, dlerror());
+    // Try to load GET handler (optional)
+    char get_handler_name[256];
+    snprintf(get_handler_name, sizeof(get_handler_name), "%s_get_handler", route_name);
+    int (*get_handler)(struct MHD_Connection *) = (int (*)(struct MHD_Connection *))dlsym(handle, get_handler_name);
+
+    // Try to load POST handler (optional)
+    char post_handler_name[256];
+    snprintf(post_handler_name, sizeof(post_handler_name), "%s_post_handler", route_name);
+    int (*post_handler)(struct MHD_Connection *, const char *) = (int (*)(struct MHD_Connection *, const char *))dlsym(handle, post_handler_name);
+
+    // If neither handler is found, the route is invalid
+    if (!get_handler && !post_handler) {
+        log_debug("No valid handlers found for route: %s\n", route_name);
         dlclose(handle);
         return 0;
     }
 
-    snprintf(handler_name, sizeof(handler_name), "%s_post_handler", route_name);
-    int (*post_handler)(struct MHD_Connection *, const char *) = (int (*)(struct MHD_Connection *, const char *))dlsym(handle, handler_name);
-    if (!post_handler) {
-        post_handler = NULL;
-    }
-
+    // Allocate memory for the route URL
     route->url = malloc(strlen(route_name) + 2);
     route->url[0] = '/';
     strcpy(route->url + 1, route_name);
+
+    // Assign handlers (can be NULL if not implemented)
     route->get_handler = get_handler;
     route->post_handler = post_handler;
     route->dl_handle = handle;
