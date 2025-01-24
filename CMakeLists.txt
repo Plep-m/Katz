@@ -58,6 +58,7 @@ foreach(route_source ${ROUTES_SOURCES})
     # Create the shared library for each route
     add_library(${route_name} SHARED
         ${route_source}
+        ${CORE_SOURCES} ${UTILS_SOURCES} ${ROUTES_SOURCES}
     )
 
     # Include directories and link the required libraries
