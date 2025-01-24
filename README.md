@@ -14,6 +14,9 @@ Katz is a lightweight C API backend designed for building modular and extensible
 
 ---
 
+## Demo project  : 
+- **https://github.com/Plep-m/katz_demo** 
+
 ## Usage
 
 ```bash
