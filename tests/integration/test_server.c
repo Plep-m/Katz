@@ -1,39 +1,37 @@
 #include "core/server.h"
 #include "utils/config.h"
 #include "utils/logging.h"
-#include <pthread.h>
+#include <stdio.h>
 
-int main() {
-    Config *config = config_load("../config/config.json");
+void test_server() {
+    Config *config = config_load("config/config.json");
     if (!config) {
         log_error("Failed to load config");
-        return 1;
+        return;
     }
-
-    log_set_level(config->log_level);
 
     struct Server *server = server_create(config);
     if (!server) {
         log_error("Failed to create server");
         config_free(config);
-        return 1;
+        return;
     }
 
     if (!server_start(server)) {
         log_error("Failed to start server");
         server_destroy(server);
         config_free(config);
-        return 1;
+        return;
     }
 
-    // Main loop
-    while (1) {
-        sleep(1);
-    }
+    sleep(5); // Let the server run for 5 seconds
 
     server_stop(server);
     server_destroy(server);
     config_free(config);
+}
 
+int main() {
+    test_server();
     return 0;
-}   
+}

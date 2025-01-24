@@ -1,0 +1,11 @@
+{
+    "server": {
+      "port": 8080,
+      "route_directory": "./routes",
+      "log_level": "info"
+    },
+    "routes": {
+      "max_routes": 100,
+      "hot_reload": true
+    }
+  }

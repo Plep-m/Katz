@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "routes.h"
-#include "http_helper.h"
+#include "core/routes.h"
+#include "core/http_helper.h"
 
 enum MHD_Result http_send_response(struct MHD_Connection *connection, int status_code, const char *response_str) {
     struct MHD_Response *response = MHD_create_response_from_buffer(

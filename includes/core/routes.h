@@ -56,7 +56,6 @@ struct Route {
     void *dl_handle;
 };
 
-void log_debug(const char *format, ...);
 void extract_route_name(const char *file_name, char *route_name);
 int load_route(struct Route *route, const char *path);
 void load_routes(struct Route **routes, int *route_count);

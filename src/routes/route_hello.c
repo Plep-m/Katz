@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "http_helper.h"
+#include "core/http_helper.h"
 
 int hello_get_handler(struct MHD_Connection *connection) {
     const char *response_str = "Hello World!\n";
